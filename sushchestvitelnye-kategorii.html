@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Имена существительные: распредели по группам</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --card: #ffffff;
+    --ink: #22252b;
+    --muted: #6b7280;
+    --line: #d9d4c7;
+    --c1: #3b5bdb;
+    --c2: #9c36b5;
+    --c3: #c2570c;
+    --ok: #2b8a3e;
+    --ok-bg: #e6f6ea;
+    --bad: #c92a2a;
+    --bad-bg: #fde8e8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.4;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .task { color: var(--muted); margin: 0 0 20px; }
+
+  .drop {
+    background: var(--card);
+    border: 2px dashed var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    transition: border-color .15s, background .15s;
+  }
+  .drop.over { border-color: var(--ink); background: #fbfaf6; }
+  .drop.target { cursor: pointer; }
+
+  .bank { margin-bottom: 18px; }
+  .bank .label { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+
+  .items { display: flex; flex-wrap: wrap; gap: 8px; min-height: 46px; }
+
+  .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .zone h2 { hyphens: auto; overflow-wrap: anywhere; }
+  @media (max-width: 640px) {
+    body { padding: 14px 8px 32px; font-size: 15px; }
+    h1 { font-size: 21px; }
+    .cols { gap: 6px; }
+    .drop { padding: 8px; }
+    .zone h2 { font-size: 13px; }
+    .zone .items { gap: 6px; }
+    .chip { padding: 6px 8px; border-radius: 8px; }
+  }
+
+  .zone { border-style: solid; border-top-width: 6px; }
+  .zone h2 { font-size: 17px; margin: 0 0 12px; line-height: 1.25; min-height: 2.5em; }
+  .zone .items { min-height: 150px; align-content: flex-start; }
+  .zone[data-cat="1"] { border-top-color: var(--c1); }
+  .zone[data-cat="2"] { border-top-color: var(--c2); }
+  .zone[data-cat="3"] { border-top-color: var(--c3); }
+  .zone[data-cat="1"] h2 { color: var(--c1); }
+  .zone[data-cat="2"] h2 { color: var(--c2); }
+  .zone[data-cat="3"] h2 { color: var(--c3); }
+
+  .chip {
+    padding: 8px 14px;
+    background: #fffdf6;
+    border: 2px solid #b9b2a0;
+    border-radius: 10px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip.sel { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(34,37,43,.18); }
+  .chip.dragging { opacity: .3; }
+  .chip.ghost {
+    position: fixed; left: 0; top: 0; z-index: 1000;
+    pointer-events: none; cursor: grabbing;
+    box-shadow: 0 8px 20px rgba(0,0,0,.22);
+    transform: rotate(-2deg);
+  }
+  .chip.ok {
+    background: var(--ok-bg); border-color: var(--ok); color: #1b5e2a; cursor: default;
+  }
+  .chip.ok::after { content: " ✓"; }
+  .chip.bad {
+    background: var(--bad-bg); border-color: var(--bad); color: var(--bad);
+    animation: shake .4s;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+  button {
+    font: inherit; font-weight: 600;
+    padding: 10px 22px; border-radius: 10px;
+    border: 2px solid var(--ink); background: var(--ink); color: #fff; cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--ink); }
+  button:disabled { opacity: .4; cursor: default; }
+  .status { font-weight: 600; }
+  .status.done { color: var(--ok); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Имена существительные</h1>
+  <p class="task">Распредели слова по трём группам: перетащи каждое слово в нужную колонку. Можно и по-другому: нажми на слово, а потом на колонку. Когда закончишь, нажми «Проверить».</p>
+
+  <div class="drop bank" id="bank">
+    <div class="label">Слова</div>
+    <div class="items"></div>
+  </div>
+
+  <div class="cols">
+    <div class="drop zone" data-cat="1">
+      <h2>Имена собственные</h2>
+      <div class="items"></div>
+    </div>
+    <div class="drop zone" data-cat="2">
+      <h2>Одушевлённые нарицательные</h2>
+      <div class="items"></div>
+    </div>
+    <div class="drop zone" data-cat="3">
+      <h2>Неодушевлённые нарицательные</h2>
+      <div class="items"></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button id="check">Проверить</button>
+    <button id="reset" class="secondary">Начать заново</button>
+    <span class="status" id="status"></span>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Порядок слов фиксированный (не перемешивается при перезагрузке).
+  // cat: 1 — собственные, 2 — одушевлённые нарицательные, 3 — неодушевлённые нарицательные
+  var WORDS = [
+    ["Корзинка", 3], ["Зинка", 1], ["Пёс", 2], ["Грибы", 3], ["Алёнка", 1],
+    ["Дед", 2], ["Мёд", 3], ["Дружок", 1], ["Сестрёнки", 2], ["Ульи", 3],
+    ["Таня", 1], ["Пчёлы", 2], ["Ведёрко", 3], ["Игнат", 1], ["Бабушка", 2],
+    ["Пасека", 3], ["Аня", 1], ["Мама", 2], ["Полянка", 3]
+  ];
+
+  var bank = document.getElementById("bank");
+  var bankItems = bank.querySelector(".items");
+  var drops = Array.prototype.slice.call(document.querySelectorAll(".drop"));
+  var checkBtn = document.getElementById("check");
+  var resetBtn = document.getElementById("reset");
+  var statusEl = document.getElementById("status");
+
+  var selected = null;
+  var drag = null;
+  var checks = 0;
+  var mistakes = 0;
+  var busy = false;
+
+  function build() {
+    drops.forEach(function (d) { d.querySelector(".items").innerHTML = ""; });
+    WORDS.forEach(function (w) {
+      var chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = w[0];
+      chip.dataset.cat = w[1];
+      chip.addEventListener("pointerdown", onDown);
+      chip.addEventListener("pointermove", onMove);
+      chip.addEventListener("pointerup", onUp);
+      chip.addEventListener("pointercancel", onCancel);
+      bankItems.appendChild(chip);
+    });
+    selected = null; checks = 0; mistakes = 0; busy = false;
+    checkBtn.disabled = false;
+    statusEl.textContent = "";
+    statusEl.className = "status";
+    markTargets();
+  }
+
+  function select(chip) {
+    if (selected) selected.classList.remove("sel");
+    selected = (chip && chip !== selected) ? chip : null;
+    if (selected) selected.classList.add("sel");
+    markTargets();
+  }
+
+  function markTargets() {
+    drops.forEach(function (d) { d.classList.toggle("target", !!selected); });
+  }
+
+  function place(chip, drop) {
+    drop.querySelector(".items").appendChild(chip);
+    chip.classList.remove("bad");
+  }
+
+  function dropAt(x, y) {
+    var el = document.elementFromPoint(x, y);
+    return el ? el.closest(".drop") : null;
+  }
+
+  function onDown(e) {
+    var chip = e.currentTarget;
+    if (busy || chip.classList.contains("ok")) return;
+    if (e.button !== undefined && e.button !== 0) return;
+    var r = chip.getBoundingClientRect();
+    drag = {
+      chip: chip, id: e.pointerId,
+      sx: e.clientX, sy: e.clientY,
+      ox: e.clientX - r.left, oy: e.clientY - r.top,
+      moved: false, ghost: null
+    };
+    try { chip.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  function onMove(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 7) return;
+      drag.moved = true;
+      if (selected) select(null);
+      var g = drag.chip.cloneNode(true);
+      g.classList.add("ghost");
+      g.classList.remove("sel", "bad");
+      document.body.appendChild(g);
+      drag.ghost = g;
+      drag.chip.classList.add("dragging");
+    }
+    e.preventDefault();
+    drag.ghost.style.left = (e.clientX - drag.ox) + "px";
+    drag.ghost.style.top = (e.clientY - drag.oy) + "px";
+
+    var over = dropAt(e.clientX, e.clientY);
+    drops.forEach(function (d) { d.classList.toggle("over", d === over); });
+
+    // автопрокрутка у краёв экрана (для телефона)
+    var edge = 60;
+    if (e.clientY < edge) window.scrollBy(0, -12);
+    else if (e.clientY > window.innerHeight - edge) window.scrollBy(0, 12);
+  }
+
+  function endDrag() {
+    if (!drag) return;
+    if (drag.ghost) drag.ghost.remove();
+    drag.chip.classList.remove("dragging");
+    drops.forEach(function (d) { d.classList.remove("over"); });
+    drag = null;
+  }
+
+  function onUp(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var chip = drag.chip, moved = drag.moved;
+    var target = moved ? dropAt(e.clientX, e.clientY) : null;
+    endDrag();
+    if (moved) {
+      if (target) place(chip, target);
+    } else {
+      select(chip);
+    }
+  }
+
+  function onCancel() { endDrag(); }
+
+  drops.forEach(function (d) {
+    d.addEventListener("click", function (e) {
+      if (busy || !selected) return;
+      if (e.target.closest(".chip")) return;
+      var chip = selected;
+      select(null);
+      place(chip, d);
+    });
+  });
+
+  checkBtn.addEventListener("click", function () {
+    if (busy) return;
+    select(null);
+    var placed = Array.prototype.slice.call(document.querySelectorAll(".zone .chip:not(.ok)"));
+    if (!placed.length) {
+      statusEl.className = "status";
+      statusEl.textContent = "Сначала разложи слова по колонкам.";
+      return;
+    }
+    checks++;
+    var wrong = [];
+    placed.forEach(function (chip) {
+      var zone = chip.closest(".zone");
+      if (zone.dataset.cat === chip.dataset.cat) chip.classList.add("ok");
+      else { chip.classList.add("bad"); wrong.push(chip); }
+    });
+    mistakes += wrong.length;
+
+    var okCount = document.querySelectorAll(".chip.ok").length;
+    var total = WORDS.length;
+
+    if (okCount === total) {
+      statusEl.className = "status done";
+      statusEl.textContent = mistakes === 0
+        ? "Всё верно с первого раза: " + total + " из " + total + "."
+        : "Все слова на своих местах. Ошибок по ходу: " + mistakes + ".";
+      checkBtn.disabled = true;
+      return;
+    }
+
+    statusEl.className = "status";
+    if (wrong.length) {
+      statusEl.textContent = "Верно: " + okCount + " из " + total + ". Ошибок: " + wrong.length + " — эти слова вернутся наверх, попробуй ещё раз.";
+      busy = true;
+      checkBtn.disabled = true;
+      setTimeout(function () {
+        wrong.forEach(function (chip) { place(chip, bank); });
+        busy = false;
+        checkBtn.disabled = false;
+      }, 1400);
+    } else {
+      statusEl.textContent = "Верно: " + okCount + " из " + total + ". Разложи оставшиеся слова.";
+    }
+  });
+
+  resetBtn.addEventListener("click", build);
+
+  build();
+})();
+</script>
+</body>
+</html>
